@@ -1,2 +1,5 @@
 # JetBrains IDEs
 .idea/
+
+# Original data folder
+.data/
