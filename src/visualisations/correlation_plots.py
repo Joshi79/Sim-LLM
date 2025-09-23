@@ -146,7 +146,7 @@ def create_temporal_correlation_heatmap(real_df: pd.DataFrame, synthetic_df: pd.
     plt.tight_layout()
 
     # Save trend figure
-    plt.savefig('../output_visualisations/temporal_correlation_trends_test_basline_prompt.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+    plt.savefig('../output_data_fidelity/temporal_correlation_trends_test_basline_prompt.pdf', format='pdf', dpi=1200, bbox_inches='tight')
     #plt.show()
 
     # Cycle correlations heatmap
@@ -169,7 +169,7 @@ def create_temporal_correlation_heatmap(real_df: pd.DataFrame, synthetic_df: pd.
     plt.tight_layout()
 
     # Save cycle figure
-    plt.savefig('../output_visualisations/temporal_correlation_cycles_test_baseline_prompt.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+    plt.savefig('../output_data_fidelity/temporal_correlation_cycles_test_baseline_prompt.pdf', format='pdf', dpi=1200, bbox_inches='tight')
 
     # Calculate and print correlation differences
     trend_diff = np.abs(corr_matrices["trend_real"].values - corr_matrices["trend_synthetic"].values)
@@ -254,6 +254,6 @@ trends_json = {
     "cycle_synthetic": trends["cycle_synthetic"].to_dict()
 }
 
-with open("../output_visualisations/temporal_correlation_synthetic_baseline.json", "w") as f:
+with open("../../reports/output_data_fidelity/temporal_correlation_synthetic_baseline.json", "w") as f:
     json.dump(trends_json, f, indent=4)
 
