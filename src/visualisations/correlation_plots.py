@@ -6,8 +6,7 @@ from scipy import stats, signal
 import matplotlib.pyplot as plt
 
 
-def calculate_full_correlation_matrices(real_df: pd.DataFrame, synthetic_df: pd.DataFrame,
-                                        all_cols: List[str], patient_col: str = "user_id") -> dict:
+def calculate_full_correlation_matrices(real_df,synthetic_df,all_cols, patient_col= "user_id"):
     """
     Compute full correlation matrices for trend/cycle components across all variable pairs.
     Following Algorithm 2 from the paper.
@@ -104,9 +103,7 @@ def calculate_full_correlation_matrices(real_df: pd.DataFrame, synthetic_df: pd.
     }
 
 
-def create_temporal_correlation_heatmap(real_df: pd.DataFrame, synthetic_df: pd.DataFrame,
-                                        all_cols: List[str], patient_col: str = "user_id",
-                                        pretty: dict | None = None):
+def create_temporal_correlation_heatmap(real_df,synthetic_df,all_cols,patient_col= "user_id",pretty= None):
     """
     Create correlation heatmaps for trend and cycle components comparison.
     """

@@ -100,17 +100,14 @@ class FixedAgent:
 
 
 # ---------------- Utilities ----------------
-def _split_episodes(df: pd.DataFrame, id_col: str = "user_id") -> List[pd.DataFrame]:
+def _split_episodes(df, id_col="user_id"):
     """Return a list of dataframes, one per episode (grouped by user_id)."""
     return [g.reset_index(drop=True) for _, g in df.groupby(id_col, observed=False)]
 
 
-def _build_rb(df_ep: pd.DataFrame,
-              rb_cls,
-              state_dim: int = 12,
-              batch_size: int = 64,
-              device: str = "cpu"):
+def _build_rb(df_ep,rb_cls,state_dim=12,batch_size=64,device= "cpu"):
     """Build replay buffer from dataframe"""
+
     d = utils.get_format_data_rl_algorithm(df_ep)
     rb = rb_cls(state_dim=state_dim,
                 batch_size=batch_size,
@@ -121,17 +118,17 @@ def _build_rb(df_ep: pd.DataFrame,
 
 
 # ---------------- Loading Functions ----------------
-def set_global_seeds(seed: int):
-    """Set random seeds for reproducibility"""
+def set_global_seeds(seed):
+    """Set seed for repocubility"""
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
 
-def load_trained_agent(agent_path: str, device: str = "cpu") -> Tuple[DDQNAgent, Dict]:
+def load_trained_agent(agent_path, device= "cpu"):
     """Load trained DDQN agent from checkpoint"""
-    print(f"  Loading DDQN agent from: {agent_path}")
+    print(f"Loading DDQN agent from: {agent_path}")
 
     if not os.path.exists(agent_path):
         raise FileNotFoundError(f"Agent file not found: {agent_path}")
@@ -162,7 +159,7 @@ def load_trained_agent(agent_path: str, device: str = "cpu") -> Tuple[DDQNAgent,
     return agent, checkpoint
 
 
-def load_policy(config: Dict[str, Any], device: str = "cpu") -> Tuple[Union[DDQNAgent, FixedAgent], Dict]:
+def load_policy(config, device="cpu"):
     """Load either a learned DDQN agent or create a fixed policy agent"""
     if config["policy_type"] == "learned":
         return load_trained_agent(config["agent_path"], device)
@@ -180,9 +177,7 @@ def load_policy(config: Dict[str, Any], device: str = "cpu") -> Tuple[Union[DDQN
 
 
 # ---- JSON-safe checkpoint summarization (mirrors enhanced_bootstrap_agent.py idea)
-def summarize_checkpoint_for_json(checkpoint: Dict[str, Any],
-                                  config: Dict[str, Any],
-                                  policy_type: str) -> Dict[str, Any]:
+def summarize_checkpoint_for_json(checkpoint,config,policy_type):
     if policy_type == "learned":
         h = checkpoint.get("hyperparameters", {})
         return {
@@ -220,10 +215,7 @@ def summarize_checkpoint_for_json(checkpoint: Dict[str, Any],
         }
 
 
-# ---------------- Evaluation helpers ----------------
-def compute_point_estimate(df: pd.DataFrame,
-                           agent: Union[DDQNAgent, FixedAgent],
-                           device: str = "cpu") -> float:
+def compute_point_estimate(df,agent,device= "cpu"):
     """Compute FQE point estimate on the full dataset"""
     d = utils.get_format_data_rl_algorithm(df)
     rb_full = utils.ReplayBuffer(
@@ -245,8 +237,7 @@ def compute_point_estimate(df: pd.DataFrame,
     return float(v_list[-1])
 
 
-def compute_policy_action_distribution(agent: Union[DDQNAgent, FixedAgent],
-                                       df: pd.DataFrame) -> Dict[str, int]:
+def compute_policy_action_distribution(agent,df):
     """Compute action distribution for a policy"""
     formatted = utils.get_format_data_rl_algorithm(df)
     states = torch.tensor(formatted["states"], dtype=torch.float32,
@@ -572,7 +563,6 @@ def main():
         json.dump(results, f, indent=2)
     print(f"\nMain results saved to: {json_path}")
 
-    # Save individual policy results (for compatibility)
     for policy_id, policy_results in results["policies"].items():
         policy_dir = os.path.join(SAVE_ROOT, f"{policy_id}_{timestamp}")
         os.makedirs(policy_dir, exist_ok=True)

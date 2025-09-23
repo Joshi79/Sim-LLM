@@ -71,12 +71,10 @@ colors = {
     'Informing':    '#35B779',  # Green
     'Affirming':    '#FDE725',  # Bright Yellow
 }
-# Create figure with larger width for 4 datasets
 fig, ax = plt.subplots(figsize=(14, 7))
 
-# Set up bar positions
 x = np.arange(len(algorithms))
-width = 0.15  # Reduced width for 4 datasets
+width = 0.15
 multiplier = 0
 
 # Create bars for each action type
@@ -119,11 +117,7 @@ legend = ax.legend(
     borderpad=0.4
 )
 legend.get_frame().set_linewidth(1.2)
-# Grid
-#ax.grid(axis='y', alpha=0.3, linestyle='-', linewidth=0.5)
 ax.set_axisbelow(True)
-
-# Remove top and right spines
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 
