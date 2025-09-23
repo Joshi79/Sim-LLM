@@ -14,7 +14,7 @@ from src.simulation.utils.helper_functions import calculate_rest_columns_for_day
 from src.simulation.utils.synthetic_data_checks import simulation_statistics
 
 from src.simulation.prompt.output_schema import create_output_parser
-from src.simulation.prompt.final_prompt import create_description_dataset, create_dataset_statistics, create_instruction
+from src.simulation.prompt.prompt_parts import create_description_dataset, create_dataset_statistics, create_instruction
 from src.simulation.prompt.dynamic_and_static_prompt import dynamic_prompt, static_prompt_template
 
 from simulation_data.prompt_template.templates_with_data_checks import dynamic_prompt_template_with_data_check, static_prompt_template
@@ -177,5 +177,5 @@ def main(simulated_patients,day_count=30):
 if __name__ == "__main__":
     simulated_patients = 100
     day_count = 30
-    main(simulated_patients,day_count)
+    main(simulated_patients, day_count)
     logger.info("Simulation completed successfully.")

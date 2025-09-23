@@ -196,7 +196,6 @@ def summarize_checkpoint_for_json(checkpoint,config,policy_type):
             "agent_path": os.path.abspath(config.get("agent_path", "")),
         }
     else:
-        # Fixed policy metadata
         h = checkpoint.get("hyperparameters", {})
         return {
             "model_info": {
@@ -365,12 +364,10 @@ def unified_bootstrap_fqe_parallel(
         action_dist = compute_policy_action_distribution(agent, df)
         results[policy_id]["action_distribution"] = action_dist
 
-        # JSON-safe metadata instead of raw checkpoint tensors
         results[policy_id].update(
-            summarize_checkpoint_for_json(checkpoint, config, config["policy_type"])
-        )
+            summarize_checkpoint_for_json(checkpoint, config, config["policy_type"]))
 
-        print(f"    Point estimate: {point_estimate:.6f}")
+        print(f"Point estimate: {point_estimate:.6f}")
 
     # 3) Run bootstrap with SAME resampling for all policies
     print(f"\nStarting unified bootstrap evaluation (B={B}, n_jobs={n_jobs}).")
@@ -394,12 +391,10 @@ def unified_bootstrap_fqe_parallel(
 
     elapsed = time.time() - t0
 
-    # 4) Organize results by policy (STORE AS LISTS)
     for policy_id in policies_config.keys():
         values = [res[policy_id] for res in bootstrap_results if not np.isnan(res.get(policy_id, np.nan))]
         results[policy_id]["bootstrap_values"] = [float(v) for v in values]  # JSON-safe list
 
-    # 5) Calculate statistics and confidence intervals
     print("\nCalculating statistics and confidence intervals.")
 
     for policy_id in results:
