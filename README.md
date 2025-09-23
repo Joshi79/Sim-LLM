@@ -15,8 +15,8 @@ To access the LLaMa-3.1-8B-Instruct you need to download the model from Hugging 
 To transfer files from your local Computer to Snelius Windows user can use WinSCP (https://winscp.net/eng/download.php).
 
 ### Prerequisites
-
 1.) Python 3.12 
+2.) Install the required packages via pip install -r requirements.txt
 
 
 #### Optuna Hyperparameter Tuning
