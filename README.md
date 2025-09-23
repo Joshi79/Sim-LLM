@@ -14,5 +14,14 @@ To access the LLaMa-3.1-8B-Instruct you need to download the model from Hugging 
 ### File Sharing 
 To transfer files from your local Computer to Snelius Windows user can use WinSCP (https://winscp.net/eng/download.php).
 
+### Prerequisites
+
+1.) Python 3.12 
+
+
+#### Optuna Hyperparameter Tuning
+
+To run the optuna hyperparameter tuning you need to transfer the training data to your Snelius Project space 
+and change the path in the code to the project space, in which the data is stored 
 
 
