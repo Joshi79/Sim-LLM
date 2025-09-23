@@ -5,38 +5,25 @@ import datetime
 
 
 # needed for
-current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+file_path = r"C:\Users\User\PycharmProjects\Sim-LLM\reports\output_policy_utility\boostrapped_results_fixed_learned_policies.json"
 
-path_100_synthetic = r"C:\Users\User\PycharmProjects\master_thesis\final_results\bootstrap_fqe_enhanced_100_patients_extensive_tuned.json"
-path_60_synthetic = r"C:\Users\User\PycharmProjects\master_thesis\final_results\bootstrap_fqe_enhanced_60_patients_synthetic_data_final.json"
-path_merged = r"C:\Users\User\PycharmProjects\master_thesis\final_results\bootstrap_fqe_enhanced_merged_data_set_final_tuned.json"
-path_original = r"C:\Users\User\PycharmProjects\master_thesis\final_results\bootstrap_fqe_enhanced_original_data_final_tuned.json"
 
-# Load JSON files
-with open(path_original, 'r') as f:
-    original_data = json.load(f)
+with open(file_path, 'r') as f:
+    data = json.load(f)
 
-with open(path_60_synthetic, 'r') as f:
-    synthetic_data_60 = json.load(f)
+original_vals = data["policies"]["original_30"]["action_distribution"]
+synthetic_vals_60 = data["policies"]["synthetic_60"]["action_distribution"]
+synthetic_vals_100 = data["policies"]["synthetic_100"]["action_distribution"]
+merged_vals = data["policies"]["merged_120"]["action_distribution"]
 
-with open(path_100_synthetic, 'r') as f:
-    synthetic_data_100 = json.load(f)
 
-with open(path_merged, 'r') as f:
-    merged_data = json.load(f)
-
-# Extract final action distributions
-original_actions = original_data['final_policy_action_distribution']
-synthetic_actions_60 = synthetic_data_60['final_policy_action_distribution']
-synthetic_actions_100 = synthetic_data_100['final_policy_action_distribution']
-merged_actions = merged_data['final_policy_action_distribution']
 
 # Prepare data for all four datasets
-action_types = list(original_actions.keys())
-original_counts = list(original_actions.values())
-synthetic_60_counts = list(synthetic_actions_60.values())
-synthetic_100_counts = list(synthetic_actions_100.values())
-merged_counts = list(merged_actions.values())
+action_types = list(original_vals.keys())
+original_counts = list(original_vals.values())
+synthetic_60_counts = list(synthetic_vals_60.values())
+synthetic_100_counts = list(synthetic_vals_100.values())
+merged_counts = list(merged_vals.values())
 
 # Calculate proportions for all datasets
 total_orig = sum(original_counts)
@@ -122,7 +109,7 @@ ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig(f"action_distribution_{current_time}.pdf",
+plt.savefig(f"../../reports/output_policy_utility/action_distribution.pdf",
            dpi=1200, bbox_inches='tight', pad_inches=0.2,
            format='pdf', facecolor='white', edgecolor='none')
 print("Action Distribution comparison saved as 'action_distribution_all_datasets.pdf'")
