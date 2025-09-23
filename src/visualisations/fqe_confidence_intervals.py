@@ -4,10 +4,8 @@ import numpy as np
 import datetime
 
 
-path_unified = r"C:\Users\User\PycharmProjects\master_thesis\results\unified_bootstrap_results_20250824_223429.json"
+path_unified = r"C:\Users\User\PycharmProjects\Sim-LLM\reports\output_policy_utility\boostrapped_results_fixed_learned_policies.json"
 
-# time stemp is needed to avoid overwriting files
-current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
 try:
     with open(path_unified, 'r') as f:
@@ -135,6 +133,6 @@ plt.subplots_adjust(bottom=0.12)
 
 # --- Save ---
 plt.tight_layout()
-output_filename = f"fqe_confidence_interval_comparison_{current_time}.pdf"
+output_filename = f"../../reports/output_policy_utility/fqe_confidence_interval_comparison.pdf"
 plt.savefig(output_filename, dpi=1200, bbox_inches='tight')
 print(f"\nFQE Confidence Interval plot saved as '{output_filename}'")
