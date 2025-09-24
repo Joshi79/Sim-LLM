@@ -11,9 +11,15 @@ import torch.nn.functional as F
 from copy import deepcopy
 from joblib import Parallel, delayed
 
+from .FQE_def import perform_FQE
+from . import utils
+
+
 from DDQN import DDQNAgent
 from FQE_def import perform_FQE
 import utils
+
+
 
 
 ALL_POLICIES_CONFIG = {
@@ -65,7 +71,7 @@ ALL_POLICIES_CONFIG = {
 
 
 # change the path to the your testing path !!!
-#TEST_DATA_PATH =
+TEST_DATA_PATH = "../../data/test_df.csv"
 
 B = 150
 CI_LEVEL = 0.95
@@ -76,207 +82,8 @@ SAVE_ROOT = "/home/joshi79/Projects/master_thesis/DDQN_FQE/final/final_data/unif
 ACTION_LABELS = ['No message', 'Encouraging', 'Informing', 'Affirming']
 
 
-
-class FixedAgent:
-    """Fixed policy that always selects the same action"""
-
-    def __init__(self, fixed_action=0, device="cpu"):
-        self.fixed_action = int(fixed_action)
-        self.device = device
-        self.action_size = 4
-        self.network = None  # compatibility
-
-    def select_action_batch_not_encoded(self, states):
-        batch_size = int(states.shape[0])
-        return torch.full((batch_size,), self.fixed_action, dtype=torch.long, device=self.device)
-
-    def select_action_batch(self, states):
-        idx = self.select_action_batch_not_encoded(states)
-        return F.one_hot(idx, num_classes=self.action_size).to(dtype=torch.float32)
-
-    def select_action(self, state):
-        return self.fixed_action
-
-
-# ---------------- Utilities ----------------
-def _split_episodes(df, id_col="user_id"):
-    """Return a list of dataframes, one per episode (grouped by user_id)."""
-    return [g.reset_index(drop=True) for _, g in df.groupby(id_col, observed=False)]
-
-
-def _build_rb(df_ep,rb_cls,state_dim=12,batch_size=64,device= "cpu"):
-    """Build replay buffer from dataframe"""
-
-    d = utils.get_format_data_rl_algorithm(df_ep)
-    rb = rb_cls(state_dim=state_dim,
-                batch_size=batch_size,
-                buffer_size=len(df_ep) + 1,
-                device=device)
-    rb.load_d4rl_dataset(d)
-    return rb
-
-
-# ---------------- Loading Functions ----------------
-def set_global_seeds(seed):
-    """Set seed for repocubility"""
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-
-def load_trained_agent(agent_path, device= "cpu"):
-    """Load trained DDQN agent from checkpoint"""
-    print(f"Loading DDQN agent from: {agent_path}")
-
-    if not os.path.exists(agent_path):
-        raise FileNotFoundError(f"Agent file not found: {agent_path}")
-
-    map_location = device if torch.cuda.is_available() and device == "cuda" else "cpu"
-    checkpoint = torch.load(agent_path, map_location=map_location, weights_only=False)
-
-    hyperparams = checkpoint['hyperparameters']
-
-    agent = DDQNAgent(
-        state_size=12,
-        action_size=4,
-        learning_rate=hyperparams.get('learning_rate', 0.001),
-        hidden_size=hyperparams.get('hidden_size', 128),
-        device=device
-    )
-
-    agent.tau = hyperparams.get('tau', 0.005)
-    agent.gamma = hyperparams.get('gamma', 0.99)
-
-    agent.network.load_state_dict(checkpoint['model_state_dict'])
-    agent.target_net.load_state_dict(checkpoint['target_net_state_dict'])
-
-    if device == "cuda" and torch.cuda.is_available():
-        agent.network = agent.network.to(device)
-        agent.target_net = agent.target_net.to(device)
-
-    return agent, checkpoint
-
-
-def load_policy(config, device="cpu"):
-    """Load either a learned DDQN agent or create a fixed policy agent"""
-    if config["policy_type"] == "learned":
-        return load_trained_agent(config["agent_path"], device)
-    elif config["policy_type"] == "fixed":
-        agent = FixedAgent(fixed_action=config["fixed_action"], device=device)
-        checkpoint = {
-            "hyperparameters": {
-                "policy_type": "fixed",
-                "fixed_action": config["fixed_action"]
-            }
-        }
-        return agent, checkpoint
-    else:
-        raise ValueError(f"Unknown policy type: {config['policy_type']}")
-
-
-# ---- JSON-safe checkpoint summarization (mirrors enhanced_bootstrap_agent.py idea)
-def summarize_checkpoint_for_json(checkpoint,config,policy_type):
-    if policy_type == "learned":
-        h = checkpoint.get("hyperparameters", {})
-        return {
-            "model_info": {
-                "architecture": "DDQN",
-                "state_size": 12,
-                "action_size": 4,
-                "hidden_size": int(h.get("hidden_size", 128))
-            },
-            "training_info": {
-                "final_fqe": checkpoint.get("final_fqe", "N/A"),
-                "dataset": checkpoint.get("dataset", "N/A"),
-                "training_epochs": checkpoint.get("training_epochs", "N/A")
-            },
-            "hyperparameters": {k: (float(v) if isinstance(v, (np.floating,)) else v) for k, v in h.items()},
-            "agent_path": os.path.abspath(config.get("agent_path", "")),
-        }
-    else:
-        h = checkpoint.get("hyperparameters", {})
-        return {
-            "model_info": {
-                "architecture": "fixed_policy",
-                "state_size": 12,
-                "action_size": 4,
-                "hidden_size": None
-            },
-            "training_info": {
-                "final_fqe": "N/A",
-                "dataset": "N/A",
-                "training_epochs": "N/A"
-            },
-            "hyperparameters": h,
-            "agent_path": None
-        }
-
-
-def compute_point_estimate(df,agent,device= "cpu"):
-    """Compute FQE point estimate on the full dataset"""
-    d = utils.get_format_data_rl_algorithm(df)
-    rb_full = utils.ReplayBuffer(
-        state_dim=12,
-        batch_size=64,
-        buffer_size=len(df) + 1,
-        device=device
-    )
-    rb_full.load_d4rl_dataset(d)
-
-    agent_copy = deepcopy(agent)
-    v_list, _ = perform_FQE(
-        rb_full,
-        agent_copy,
-        df,
-        bool_learned_policy=True
-    )
-
-    return float(v_list[-1])
-
-
-def compute_policy_action_distribution(agent,df):
-    """Compute action distribution for a policy"""
-    formatted = utils.get_format_data_rl_algorithm(df)
-    states = torch.tensor(formatted["states"], dtype=torch.float32,
-                          device=getattr(agent, 'device', 'cpu'))
-    with torch.no_grad():
-        pred_idx = agent.select_action_batch_not_encoded(states)
-    pred_idx_cpu = pred_idx.cpu().numpy()
-
-    counts = {}
-    for i in range(len(ACTION_LABELS)):
-        counts[ACTION_LABELS[i]] = int((pred_idx_cpu == i).sum())
-    return counts
-
-
-def extended_stats(samples: np.ndarray) -> Dict[str, Any]:
-    """Compute extended statistics for bootstrap samples"""
-    s = samples
-    return {
-        "n_samples": int(len(s)),
-        "mean": float(np.mean(s)),
-        "std": float(np.std(s)),
-        "median": float(np.median(s)),
-        "min": float(np.min(s)),
-        "max": float(np.max(s)),
-        "range": float(np.max(s) - np.min(s)),
-        "q25": float(np.percentile(s, 25)),
-        "q75": float(np.percentile(s, 75)),
-        "iqr": float(np.percentile(s, 75) - np.percentile(s, 25)),
-        "skewness": float(pd.Series(s).skew()),
-        "kurtosis": float(pd.Series(s).kurtosis()),
-        "se": float(np.std(s) / np.sqrt(len(s))),
-        "cv": float(np.std(s) / abs(np.mean(s))) if np.mean(s) != 0 else float('inf')
-    }
-
-
-# ---------------- Modified Bootstrap Function ----------------
-def _single_bootstrap_run_unified(idx: int,
-                                  episodes: List[pd.DataFrame],
-                                  policies_config: Dict[str, Dict],
-                                  seed: int,
-                                  device: str) -> Dict[str, float]:
+# Boostrapping made for parallel execution
+def _single_bootstrap_run_unified(idx,episodes,policies_config,seed,device):
     """
     Run one bootstrap replicate for ALL policies using the SAME resampled episodes.
     Returns dictionary with policy_id -> value
@@ -285,20 +92,19 @@ def _single_bootstrap_run_unified(idx: int,
     rng = np.random.default_rng(seed)
     K = len(episodes)
 
-    # 1) Resample episodes with replacement (SAME for all policies)
+    # Resample all 7 episodes with replacement
     res_idx = rng.integers(0, K, size=K)
     boot_df = pd.concat([episodes[i] for i in res_idx], ignore_index=True)
 
-    # 2) Build replay buffer once for the resample
-    rb_boot = _build_rb(boot_df, utils.ReplayBuffer, device=device)
+    rb_boot = utils._build_rb(boot_df, utils.ReplayBuffer, device=device)
 
     results = {}
 
-    # 3) Evaluate each policy on the SAME bootstrap sample
+    # Evaluate each policy on the SAME bootstrap sample
     for policy_id, config in policies_config.items():
         try:
             # Load policy
-            agent, _ = load_policy(config, device)
+            agent, _ = utils.load_policy(config, device)
 
             # Deep copy the policy
             policy_copy = deepcopy(agent)
@@ -319,15 +125,7 @@ def _single_bootstrap_run_unified(idx: int,
     return results
 
 
-def unified_bootstrap_fqe_parallel(
-        df: pd.DataFrame,
-        policies_config: Dict[str, Dict[str, Any]],
-        B: int = 100,
-        ci_level: float = 0.90,
-        seed: int = 42,
-        n_jobs: Optional[int] = None,
-        device: str = "cpu"
-) -> Dict[str, Any]:
+def unified_bootstrap_fqe_parallel(df,policies_config,B= 150,ci_level= 0.95,seed= 42,n_jobs= None,device= "cpu"):
     """
     Perform bootstrap FQE for multiple policies using the SAME bootstrap samples.
     """
@@ -335,13 +133,13 @@ def unified_bootstrap_fqe_parallel(
     if n_jobs is None or n_jobs < 0:
         n_jobs = os.cpu_count()
 
-    # 1) Split the dataset once into episodes
-    episodes = _split_episodes(df)
+    episodes = utils._split_episodes(df)
     n_episodes = len(episodes)
+
     print(f"Dataset contains {n_episodes} episodes (patients)")
 
     # Initialize results storage
-    results: Dict[str, Dict[str, Any]] = {}
+    results = {}
     for policy_id, config in policies_config.items():
         results[policy_id] = {
             "description": config["description"],
@@ -355,18 +153,16 @@ def unified_bootstrap_fqe_parallel(
     print("\nComputing point estimates on full dataset.")
     for policy_id, config in policies_config.items():
         print(f"  {config['description']}.")
-        agent, checkpoint = load_policy(config, device)
+        agent, checkpoint = utils.load_policy(config, device)
 
-        point_estimate = compute_point_estimate(df, agent, device)
+        point_estimate = utils.compute_point_estimate(df, agent, device)
         results[policy_id]["point_estimate"] = float(point_estimate)
 
-        action_dist = compute_policy_action_distribution(agent, df)
+        action_dist = utils.compute_policy_action_distribution(agent, df)
         results[policy_id]["action_distribution"] = action_dist
 
         results[policy_id].update(
-            summarize_checkpoint_for_json(checkpoint, config, config["policy_type"]))
-
-        print(f"Point estimate: {point_estimate:.6f}")
+            utils.summarize_checkpoint_for_json(checkpoint, config, config["policy_type"]))
 
     # 3) Run bootstrap with SAME resampling for all policies
     print(f"\nStarting unified bootstrap evaluation (B={B}, n_jobs={n_jobs}).")
@@ -394,7 +190,6 @@ def unified_bootstrap_fqe_parallel(
         values = [res[policy_id] for res in bootstrap_results if not np.isnan(res.get(policy_id, np.nan))]
         results[policy_id]["bootstrap_values"] = [float(v) for v in values]  # JSON-safe list
 
-    print("\nCalculating statistics and confidence intervals.")
 
     for policy_id in results:
         samples = np.asarray(results[policy_id]["bootstrap_values"], dtype=float)
@@ -452,13 +247,12 @@ def unified_bootstrap_fqe_parallel(
                 "additional_value_percentile_cis": additional_cis
             },
             "ci_width": float(error_ci_upper - error_ci_lower),
-            "extended_statistics": extended_stats(samples),
+            "extended_statistics": utils.extended_stats(samples),
             "all_bootstrap_values": samples.tolist()
         })
 
-    # 6) Calculate pairwise correlations (using SAME bootstrap samples)
     print("\nCalculating pairwise correlations.")
-    correlations: Dict[str, Dict[str, Any]] = {}
+    correlations = {}
     policy_ids = list(policies_config.keys())
 
     for i, policy1 in enumerate(policy_ids):
@@ -508,7 +302,7 @@ def unified_bootstrap_fqe_parallel(
 def main():
     """Main function to run unified bootstrap FQE for all policies"""
 
-    set_global_seeds(SEED)
+    utils.set_global_seeds(SEED)
     os.makedirs(SAVE_ROOT, exist_ok=True)
 
     # Load test data

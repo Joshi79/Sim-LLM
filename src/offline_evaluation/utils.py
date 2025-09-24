@@ -1,10 +1,18 @@
 import numpy as np
 import torch
+import pandas as pd
+import torch.nn.functional as F
+import os
+from copy import deepcopy
+
+
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 COLUMNS_RL_ALGORITHM = ['day_part_x', 'numberRating', 'highestRating', 'lowestRating', 'medianRating', 'sdRating', 'numberLowRating', 'numberMediumRating', 'numberHighRating',
                     'numberMessageReceived', 'numberMessageRead', 'readAllMessage']
+ACTION_LABELS = ['No message', 'Encouraging', 'Informing', 'Affirming']
 
 
 # Generic replay buffer for standard gym tasks
@@ -198,3 +206,177 @@ def get_format_data_rl_algorithm(df):
                     'user_ids': list_userids}
     
     return dict_dataset
+class FixedAgent:
+    """Fixed policy that always selects the same action"""
+
+    def __init__(self, fixed_action=0, device="cpu"):
+        self.fixed_action = int(fixed_action)
+        self.device = device
+        self.action_size = 4
+        self.network = None  # compatibility
+
+    def select_action_batch_not_encoded(self, states):
+        batch_size = int(states.shape[0])
+        return torch.full((batch_size,), self.fixed_action, dtype=torch.long, device=self.device)
+
+    def select_action_batch(self, states):
+        idx = self.select_action_batch_not_encoded(states)
+        return F.one_hot(idx, num_classes=self.action_size).to(dtype=torch.float32)
+
+    def select_action(self, state):
+        return self.fixed_action
+
+def _split_episodes(df, id_col="user_id"):
+    """Return a list of dataframes, one per episode (grouped by user_id)."""
+    return [g.reset_index(drop=True) for _, g in df.groupby(id_col, observed=False)]
+
+
+def _build_rb(df_ep,rb_cls,state_dim=12,batch_size=64,device= "cpu"):
+    """Build replay buffer from dataframe"""
+
+    d = get_format_data_rl_algorithm(df_ep)
+    rb = rb_cls(state_dim=state_dim,
+                batch_size=batch_size,
+                buffer_size=len(df_ep) + 1,
+                device=device)
+    rb.load_d4rl_dataset(d)
+    return rb
+
+
+def extended_stats(samples):
+    """Compute extended statistics for bootstrap samples"""
+    s = samples
+    return {
+        "n_samples": int(len(s)),
+        "mean": float(np.mean(s)),
+        "std": float(np.std(s)),
+        "median": float(np.median(s)),
+        "min": float(np.min(s)),
+        "max": float(np.max(s)),
+        "range": float(np.max(s) - np.min(s)),
+        "q25": float(np.percentile(s, 25)),
+        "q75": float(np.percentile(s, 75)),
+        "iqr": float(np.percentile(s, 75) - np.percentile(s, 25)),
+        "skewness": float(pd.Series(s).skew()),
+        "kurtosis": float(pd.Series(s).kurtosis()),
+        "se": float(np.std(s) / np.sqrt(len(s))),
+        "cv": float(np.std(s) / abs(np.mean(s))) if np.mean(s) != 0 else float('inf')
+    }
+def summarize_checkpoint_for_json(checkpoint,config,policy_type):
+    if policy_type == "learned":
+        h = checkpoint.get("hyperparameters", {})
+        return {
+            "model_info": {
+                "architecture": "DDQN",
+                "state_size": 12,
+                "action_size": 4,
+                "hidden_size": int(h.get("hidden_size", 128))
+            },
+            "training_info": {
+                "final_fqe": checkpoint.get("final_fqe", "N/A"),
+                "dataset": checkpoint.get("dataset", "N/A"),
+                "training_epochs": checkpoint.get("training_epochs", "N/A")
+            },
+            "hyperparameters": {k: (float(v) if isinstance(v, (np.floating,)) else v) for k, v in h.items()},
+            "agent_path": os.path.abspath(config.get("agent_path", "")),
+        }
+    else:
+        h = checkpoint.get("hyperparameters", {})
+        return {
+            "model_info": {
+                "architecture": "fixed_policy",
+                "state_size": 12,
+                "action_size": 4,
+                "hidden_size": None
+            },
+            "training_info": {
+                "final_fqe": "N/A",
+                "dataset": "N/A",
+                "training_epochs": "N/A"
+            },
+            "hyperparameters": h,
+            "agent_path": None
+        }
+
+def set_global_seeds(seed):
+    """Set seed for repocubility"""
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+def compute_policy_action_distribution(agent, df):
+    """Compute action distribution for a policy."""
+    formatted = get_format_data_rl_algorithm(df)
+    states = torch.tensor(
+        formatted["states"],
+        dtype=torch.float32,
+        device=getattr(agent, "device", "cpu"),
+    )
+    with torch.no_grad():
+        pred_idx = agent.select_action_batch_not_encoded(states)
+
+    pred_idx_cpu = pred_idx.detach().cpu().numpy()
+    return {ACTION_LABELS[i]: int((pred_idx_cpu == i).sum()) for i in range(len(ACTION_LABELS))}
+
+
+def compute_point_estimate(df, agent, device="cpu"):
+    # Lokaler Import vermeidet Zirkularimport (FQE_def -> utils)
+    from .FQE_def import perform_FQE
+
+    d = get_format_data_rl_algorithm(df)
+    rb_full = ReplayBuffer(state_dim=12, batch_size=64, buffer_size=len(df) + 1, device=device)
+    rb_full.load_d4rl_dataset(d)
+    agent_copy = deepcopy(agent)
+    v_list, _ = perform_FQE(rb_full, agent_copy, df, bool_learned_policy=True)
+    return float(v_list[-1])
+
+def load_trained_agent(agent_path, device= "cpu"):
+    """Load trained DDQN which was prebiously tuned with Optuna"""
+
+    from .DDQN import DDQNAgent
+
+    map_location = device if torch.cuda.is_available() and device == "cuda" else "cpu"
+    checkpoint = torch.load(agent_path, map_location=map_location, weights_only=False)
+
+    hyperparams = checkpoint['hyperparameters']
+
+    agent = DDQNAgent(
+        state_size=12,
+        action_size=4,
+        learning_rate=hyperparams.get('learning_rate', 0.001),
+        hidden_size=hyperparams.get('hidden_size', 128),
+        device=device
+    )
+
+    agent.tau = hyperparams.get('tau', 0.005)
+    agent.gamma = hyperparams.get('gamma', 0.99)
+
+    agent.network.load_state_dict(checkpoint['model_state_dict'])
+    agent.target_net.load_state_dict(checkpoint['target_net_state_dict'])
+
+    if device == "cuda" and torch.cuda.is_available():
+        agent.network = agent.network.to(device)
+        agent.target_net = agent.target_net.to(device)
+
+    return agent, checkpoint
+
+
+def load_policy(config, device="cpu"):
+	"""Load either a learned DDQN agent or create a fixed policy agent"""
+
+	if config["policy_type"] == "learned":
+		return load_trained_agent(config["agent_path"], device)
+
+	elif config["policy_type"] == "fixed":
+		agent = FixedAgent(fixed_action=config["fixed_action"], device=device)
+		checkpoint = {
+			"hyperparameters": {
+				"policy_type": "fixed",
+				"fixed_action": config["fixed_action"]
+			}
+		}
+		return agent, checkpoint
+	else:
+		raise ValueError(f"Unknown policy type: {config['policy_type']}")
+
+
