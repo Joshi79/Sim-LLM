@@ -253,3 +253,27 @@ def clean_llm_output(json_string):
                 pos += 1
 
         return objects
+
+    def calculate_ph_rl_reward(df):
+        """
+        Calculate pH-RL reward based on the methodology:
+        """
+        df_copy = df.copy()
+
+        required_cols = ['numberMessageReceived', 'numberMessageRead', 'numberRating']
+        for col in required_cols:
+            if col not in df_copy.columns:
+                raise ValueError(f"Column '{col}' is missing from the DataFrame.")
+
+        df_copy['reward'] = 0.0
+
+        for row in df_copy.itertuples():
+            if row.numberMessageReceived > 0:
+                message_read_fraction = row.numberMessageRead / row.numberMessageReceived
+            else:
+                message_read_fraction = 0.0
+
+            reward = 0.5 * message_read_fraction + 0.5 * row.numberRating
+            df_copy.at[row.Index, 'reward'] = round(reward, 6)
+
+        return df_copy

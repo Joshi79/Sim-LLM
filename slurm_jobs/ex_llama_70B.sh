@@ -14,7 +14,7 @@
 source $HOME/.bashrc
 conda activate master_thesis_env
 
-cd $HOME/RL-LLM-Simulator
+cd $HOME/Sim-LLM
 
 # Ensure logs/ exists for SLURM output
 mkdir -p logs
