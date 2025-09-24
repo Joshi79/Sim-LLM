@@ -2,17 +2,6 @@
 Author: Joshua Joel Haas
 
 
-## Prerequisites
-1.) Python 3.12 \
-2.) Install the required packages via pip install -r requirements.txt \
-3.) Need to have access to Snelius \
-4.) Download the LLaMa-3.1-8B-Instruct model from Hugging Face and transfer it to Snelius via Filesharing. \
-5.) Need to have access to LLaMa-3.3.-70B Instruct via Servicedesk of SURF. \
-6.) Need to transfer the orignal data to Snelius via Filesharing.
-
-## Project Structure
-
-# Sim-LLM
 
 ## Project structure
 
@@ -31,11 +20,17 @@ Sim-LLM/
 ├── README.md
 └── requirements.txt
 ```
+## Prerequisites
+```text
+1.) Python 3.12 
+2.) Install the required packages via pip install -r requirements.txt 
+3.) Need to have access to Snelius 
+4.) Download the LLaMa-3.1-8B-Instruct model from Hugging Face and transfer it to Snelius via Filesharing. 
+5.) Need to have access to LLaMa-3.3.-70B Instruct via Servicedesk of SURF. 
+6.) Need to transfer the orignal data to Snelius via Filesharing.
+```
 
-This repository organizes code, data, and notebooks as follows:
-- 'evaluation_notebooks': Contains evaluation scripts and notebooks.
-- reports: Contains generated reports and visualizations.
-- ''
+
 
 
 ## Model Access:
