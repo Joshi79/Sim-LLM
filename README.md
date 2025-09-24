@@ -12,21 +12,25 @@ Author: Joshua Joel Haas
 
 ## Project Structure
 
-Project Structure
-The repository is organized as follows:
+# Sim-LLM
 
-├── data/                  # Data files (ignored by git) \
-├── evaluation_notebooks/  # Jupyter notebooks for evaluation and analysis \
-├── reports/                 # Generated reports, plots, and model checkpoints \
-├── slurm_jobs/              # SLURM scripts for running jobs on a cluster \
-├── src/                   # Source code \
-│   ├── data_preperation/  # Scripts for data preprocessing and splitting  \
-│   ├── offline_evaluation/ # Scripts for offline evaluation of RL agents \
-│   ├── simulation/        # Scripts for running the LLM-based simulations \
-│   └── visualisations/    # Scripts for generating visualisations \
-├── .gitignore \
-├── README.md \
-└── requirements.txt \
+## Project structure
+
+```text
+Sim-LLM/
+├── data/                  # Data files (ignored by git)
+├── evaluation_notebooks/  # Jupyter notebooks for evaluation and analysis
+├── reports/                # Generated reports, plots, and trained DDQNs
+├── slurm_jobs/              # SLURM scripts for running jobs on a cluster
+├── src/                   # Source code
+│   ├── data_preperation/  # Scripts for data preprocessing and splitting
+│   ├── offline_evaluation/ # Scripts for offline evaluation of DDQN 
+│   ├── simulation/        # Scripts for running the LLM-based simulations
+│   └── visualisations/    # Scripts for generating visualisations
+├── .gitignore
+├── README.md
+└── requirements.txt
+```
 
 This repository organizes code, data, and notebooks as follows:
 - 'evaluation_notebooks': Contains evaluation scripts and notebooks.
