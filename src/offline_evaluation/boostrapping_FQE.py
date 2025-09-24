@@ -19,22 +19,22 @@ import utils
 ALL_POLICIES_CONFIG = {
     "original_30": {
         "policy_type": "learned",
-        "agent_path": "/home/joshi79/Projects/master_thesis/DDQN_FQE/final/final_data/final_agent_trained/dataset_original_best_agent_20250821_205253.pth",
+        "agent_path": "../../reports/hypertuned_ddqn/original_data_tuned.pth",
         "description": "Original (30 patients)"
     },
     "synthetic_60": {
         "policy_type": "learned",
-        "agent_path": "/home/joshi79/Projects/master_thesis/DDQN_FQE/final/final_data/final_agent_trained/dataset_60_patients_best_agent_20250821_044248.pth",
+        "agent_path": "../../reports/hypertuned_ddqn/synthetic_60_tuned.pth",
         "description": "Synthetic (60 patients)"
     },
     "synthetic_100": {
         "policy_type": "learned",
-        "agent_path": "/home/joshi79/Projects/master_thesis/DDQN_FQE/final/final_data/final_agent_trained/dataset_100_patients_best_agent_20250821_095237.pth",
+        "agent_path": "../../reports/hypertuned_ddqn/synthetic_100_tuned.pth",
         "description": "Synthetic (100 patients)"
     },
     "merged_120": {
         "policy_type": "learned",
-        "agent_path": "/home/joshi79/Projects/master_thesis/DDQN_FQE/final/final_data/final_agent_trained/dataset_merged_best_agent_20250821_154121.pth",
+        "agent_path": "../../reports/hypertuned_ddqn/merged_120_tuned.pth",
         "description": "Merged (120 patients)"
     },
 
@@ -64,10 +64,9 @@ ALL_POLICIES_CONFIG = {
 
 
 
-# change the path to the required test data path
-TEST_DATA_PATH = "DDQN_FQE/final/test_df_scaled.csv"
+# change the path to the your testing path !!!
+#TEST_DATA_PATH =
 
-# ---------------- Parameters ----------------
 B = 150
 CI_LEVEL = 0.95
 SEED = 42
@@ -77,7 +76,7 @@ SAVE_ROOT = "/home/joshi79/Projects/master_thesis/DDQN_FQE/final/final_data/unif
 ACTION_LABELS = ['No message', 'Encouraging', 'Informing', 'Affirming']
 
 
-# ---------------- Fixed Policy Agent ----------------
+
 class FixedAgent:
     """Fixed policy that always selects the same action"""
 
