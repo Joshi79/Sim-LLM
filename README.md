@@ -10,7 +10,7 @@ Sim-LLM/
 ├── data/                  # Data files (ignored by git)
 ├── evaluation_notebooks/  # Jupyter notebooks for evaluation and analysis
 ├── reports/                # Generated reports, plots, and trained DDQNs
-├── slurm_jobs/              # SLURM scripts for running jobs on a cluster
+├── slurm_jobs/              # SLURM scripts for running jobs on Snelius
 ├── src/                   # Source code
 │   ├── data_preperation/  # Scripts for data preprocessing and splitting
 │   ├── offline_evaluation/ # Scripts for offline evaluation of DDQN 
