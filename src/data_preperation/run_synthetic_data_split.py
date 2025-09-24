@@ -30,7 +30,7 @@ def main():
     # Save the datasets
     output_dir = r'../../data/synthetic_data_splits'
     os.makedirs(output_dir, exist_ok=True)
-    train_df_scaled.to_csv(f'{output_dir}/full_train_df_scaled_.csv.csv', index=False)
+    train_df_scaled.to_csv(f'{output_dir}/full_train_df_scaled_.csv', index=False)
     val_df_scaled.to_csv(f'{output_dir}/full_val_df_not_scaled.csv', index=False)
     train_df.to_csv(f'{output_dir}/synthetic_full_train_df.csv', index=False)
     val_df.to_csv(f'{output_dir}/synthetic_full_val_df.csv', index=False)
