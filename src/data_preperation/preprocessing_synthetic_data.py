@@ -149,30 +149,6 @@ def remove_redundant_rows_EndOfTrial_syn(df):
     return df
 
 
-def calculate_ph_rl_reward(df):
-    """
-    Calculate pH-RL reward based on the methodology:
-    reward = 0.5 * (messages_read/messages_received) + 0.5 * (number_ratings)
-    """
-    df_copy = df.copy()
-
-    required_cols = ['numberMessageReceived', 'numberMessageRead', 'numberRating']
-    for col in required_cols:
-        if col not in df_copy.columns:
-            raise ValueError(f"Column '{col}' is missing from the DataFrame.")
-
-    df_copy['reward'] = 0.0
-
-    for row in df_copy.itertuples():
-        if row.numberMessageReceived > 0:
-            message_read_fraction = row.numberMessageRead / row.numberMessageReceived
-        else:
-            message_read_fraction = 0.0
-
-        reward = 0.5 * message_read_fraction + 0.5 * row.numberRating
-        df_copy.at[row.Index, 'reward'] = round(reward, 6)
-
-    return df_copy
 
 
 def perform_data_cleaning(df):
@@ -250,20 +226,8 @@ def scale_features_with_scaler(df, scaler):
 
 def generate_train_val_split(df, test_size=0.25, random_state=42):
     """
-    Generate a single train/validation split
-
-    Args:
-        df: Cleaned dataframe
-        test_size: Proportion of data for validation (default 0.3 for 70/30 split)
-        random_state: Random seed for reproducibility
-
-    Returns:
-        train_df: Training dataframe (scaled)
-        val_df: Validation dataframe (scaled)
-        scaler: Fitted MinMaxScaler from training data
+    Generate a train/validation split ensuring no user overlap between sets.
     """
-
-    print(f"\nGenerating train/validation split (train: {(1 - test_size) * 100:.0f}%, val: {test_size * 100:.0f}%)...")
 
     # Create train/val split using GroupShuffleSplit
     splitter = GroupShuffleSplit(test_size=test_size, n_splits=1, random_state=random_state)
@@ -283,6 +247,6 @@ def generate_train_val_split(df, test_size=0.25, random_state=42):
     train_df_scaled, scaler = scale_features(train_df.copy())
     val_df_scaled = scale_features_with_scaler(val_df.copy(), scaler)
 
-    print("✓ Scaling complete")
+    print("Scaling complete")
 
     return train_df_scaled, val_df_scaled, train_df, val_df, scaler

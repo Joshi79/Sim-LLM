@@ -17,8 +17,6 @@ from src.simulation.prompt.output_schema import create_output_parser
 from src.simulation.prompt.prompt_parts import create_description_dataset, create_dataset_statistics, create_instruction
 from src.simulation.prompt.dynamic_and_static_prompt import dynamic_prompt, static_prompt_template
 
-from simulation_data.prompt_template.templates_with_data_checks import dynamic_prompt_template_with_data_check, static_prompt_template
-
 
 os.makedirs("logs", exist_ok=True)
 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -106,6 +104,7 @@ def main(simulated_patients,day_count=30):
             logger.info(f"Actions for day {day_id + 1}: {action_list}")
             logger.info(f"\n\nSimulating day {day_id + 1} for {user_id}.\n")
 
+            # calcuatte the statistics for the synthetic data to ground the LLM
             simulation_statistic = simulation_statistics(simulations_df)
 
             # the dynamic prompt for the simulated day

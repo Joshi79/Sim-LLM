@@ -4,7 +4,7 @@ import pickle
 from sklearn.preprocessing import MinMaxScaler
 import os
 from datetime import datetime
-from simulation_data.final_run_data_preparation import preprocessing
+from src.data_preperation import preprocessing_original_data as preprocessing
 
 
 class DataSplitter:
@@ -39,17 +39,7 @@ class DataSplitter:
 
     def create_train_val_test_split(self, df, test_size=0.25, val_size=0.33, random_state_test=1, random_state_val=2):
         """
-        Create train/validation/test splits using GroupShuffleSplit to ensure no user overlap
-
-        Args:
-            df: Input dataframe
-            test_size: Proportion for test set (from total data)
-            val_size: Proportion for validation set (from remaining train pool)
-            random_state_test: Random state for train/test split
-            random_state_val: Random state for train/validation split
-
-        Returns:
-            Dictionary containing all datasets and metadata
+       Split the Data
         """
         unique_users = df['user_id'].unique()
         print(f"Total unique users: {len(unique_users)}")
@@ -61,10 +51,10 @@ class DataSplitter:
         train_pool_df = df.iloc[train_pool_indices].copy()
         test_df = df.iloc[test_indices].copy()
 
-        # Keep original training dataset (before val split)
+        # Keep original training dataset for the LLM
         original_training_dataset = train_pool_df.copy()
 
-        # Step 2: Split train_pool into train and validation
+        # Make a second split for training the DDQN - split the orignal data of 21 into training 14 and val 7
         val_splitter = GroupShuffleSplit(test_size=val_size, n_splits=1, random_state=random_state_val)
         train_indices, val_indices = next(val_splitter.split(train_pool_df, groups=train_pool_df['user_id']))
 
@@ -85,55 +75,31 @@ class DataSplitter:
         assert len(set(train_user_ids) & set(val_user_ids)) == 0, "Train-Val user overlap detected!"
         assert len(set(train_user_ids) & set(test_user_ids)) == 0, "Train-Test user overlap detected!"
         assert len(set(val_user_ids) & set(test_user_ids)) == 0, "Val-Test user overlap detected!"
-        print("✓ No user overlap between splits confirmed")
 
-        # Scale features: fit on train, transform val and test
-        train_df_scaled, scaler = self.scale_features(train_df)
-        val_df_scaled = self.scale_features_with_existing_scaler(val_df, scaler)
-        test_df_scaled = self.scale_features_with_existing_scaler(test_df, scaler)
+        # Scale the training 14 and validation 7 set
+        train_df_scaled, scaler_train = self.scale_features(train_df)
+        val_df_scaled = self.scale_features_with_existing_scaler(val_df, scaler_train)
 
-        # Store scaler for later use
-        self.scaler = scaler
+        # Scale the test set with the  original training dataset of 21
+        _, scaler_original = self.scale_features(original_training_dataset)
+        test_df_scaled = self.scale_features_with_existing_scaler(test_df, scaler_original)
 
-        # Create results dictionary
         results = {
-            # Original (unscaled) datasets
             'train_df': train_df,
             'val_df': val_df,
             'test_df': test_df,
-            'original_training_dataset': original_training_dataset,  # Before val split
+            'original_training_dataset': original_training_dataset,
 
             # Scaled datasets
             'train_df_scaled': train_df_scaled,
             'val_df_scaled': val_df_scaled,
-            'test_df_scaled': test_df_scaled,
-
-            # Scaler and metadata
-            'scaler': scaler,
-            'split_info': {
-                'train_users': sorted(train_user_ids),
-                'val_users': sorted(val_user_ids),
-                'test_users': sorted(test_user_ids),
-                'train_samples': len(train_df),
-                'val_samples': len(val_df),
-                'test_samples': len(test_df),
-                'test_size': test_size,
-                'val_size': val_size,
-                'random_state_test': random_state_test,
-                'random_state_val': random_state_val
-            }
+            'test_df_scaled': test_df_scaled
         }
-
         return results
 
     def save_all_datasets(self, results, output_dir='data_splits', timestamp_suffix=True):
         """
-        Save all datasets, scaler, and metadata
-
-        Args:
-            results: Dictionary from create_train_val_test_split
-            output_dir: Directory to save files
-            timestamp_suffix: Whether to add timestamp to filenames
+        Save the datasets
         """
         # Create output directory
         os.makedirs(output_dir, exist_ok=True)
@@ -148,50 +114,7 @@ class DataSplitter:
         results['val_df_scaled'].to_csv(f'{output_dir}/val_df_scaled.csv', index=False)
         results['test_df_scaled'].to_csv(f'{output_dir}/test_df_scaled.csv', index=False)
 
-        with open(f'{output_dir}/scaler.pkl', 'wb') as f:
-            pickle.dump(results['scaler'], f)
-
-        split_info = results['split_info']
-        with open(f'{output_dir}/split_info.txt', 'w') as f:
-            f.write("DATA SPLIT INFORMATION\n")
-            f.write("=" * 50 + "\n\n")
-            f.write(f"Split Parameters:\n")
-            f.write(f"  Test size: {split_info['test_size']}\n")
-            f.write(f"  Validation size: {split_info['val_size']}\n")
-            f.write(f"  Random state (test): {split_info['random_state_test']}\n")
-            f.write(f"  Random state (val): {split_info['random_state_val']}\n\n")
-
-            f.write(f"Dataset Sizes:\n")
-            f.write(f"  Training: {split_info['train_samples']} samples\n")
-            f.write(f"  Validation: {split_info['val_samples']} samples\n")
-            f.write(f"  Test: {split_info['test_samples']} samples\n\n")
-
-            f.write(f"User Distribution:\n")
-            f.write(f"  Training users ({len(split_info['train_users'])}): {split_info['train_users']}\n")
-            f.write(f"  Validation users ({len(split_info['val_users'])}): {split_info['val_users']}\n")
-            f.write(f"  Test users ({len(split_info['test_users'])}): {split_info['test_users']}\n\n")
-
-            f.write(f"Files Generated:\n")
-            f.write(f"  - train_df.csv (original training set)\n")
-            f.write(f"  - val_df.csv (original validation set)\n")
-            f.write(f"  - test_df.csv (original test set)\n")
-            f.write(f"  - original_training_dataset.csv (before val split)\n")
-            f.write(f"  - train_df_scaled.csv (scaled training set)\n")
-            f.write(f"  - val_df_scaled.csv (scaled validation set)\n")
-            f.write(f"  - test_df_scaled.csv (scaled test set)\n")
-            f.write(f"  - scaler.pkl (MinMaxScaler object)\n")
-            f.write(f"  - split_info.txt (this file)\n")
-
-        print(f"\n✓ All datasets saved to '{output_dir}/' directory")
         return f'{output_dir}',
-
-    def load_scaler(self, scaler_path):
-        """Load a previously saved scaler"""
-        with open(scaler_path, 'rb') as f:
-            scaler = pickle.load(f)
-        self.scaler = scaler
-        return scaler
-
 
 def main():
 

@@ -24,6 +24,32 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def calculate_ph_rl_reward(df):
+    """
+    Calculate pH-RL reward based on the methodology:
+    """
+    df_copy = df.copy()
+
+    required_cols = ['numberMessageReceived', 'numberMessageRead', 'numberRating']
+    for col in required_cols:
+        if col not in df_copy.columns:
+            raise ValueError(f"Column '{col}' is missing from the DataFrame.")
+
+    df_copy['reward'] = 0.0
+
+    for row in df_copy.itertuples():
+        if row.numberMessageReceived > 0:
+            message_read_fraction = row.numberMessageRead / row.numberMessageReceived
+        else:
+            message_read_fraction = 0.0
+
+        reward = 0.5 * message_read_fraction + 0.5 * row.numberRating
+
+        # rounded to fit the reward the same as the original implementation
+        df_copy.at[row.Index, 'reward'] = round(reward, 6)
+
+    return df_copy
+
 def calculate_rest_columns_for_day(simulated_day, day_no, messages_received_list, user_id, action_list, day_part_list,
                                    motivational_preference, trajectories_individual):
     """
@@ -83,14 +109,13 @@ def calculate_rest_columns_for_day(simulated_day, day_no, messages_received_list
 
                 current_highest_number = int(max(ratings))
 
-                # make sure when during the day it happens that  - the lowerst rating wont be 0
+
                 non_zero_ratings = [r for r in ratings if r > 0]
                 current_lowest_number = int(min(non_zero_ratings)) if non_zero_ratings else np.inf
 
                 if current_highest_number > stats["highestRating"]:
                     stats["highestRating"] = current_highest_number
 
-                    # make sure that no rating given doesnt change the lowest rating
                 if stats["lowestRating"] == 0:
                     stats["lowestRating"] = np.inf
 
@@ -124,8 +149,13 @@ def calculate_rest_columns_for_day(simulated_day, day_no, messages_received_list
                     stats["lowestRating"] = 0
 
                 day_trajectory = pd.DataFrame([stats], columns=trajectories_individual.columns)
-                trajectories_individual = pd.concat([trajectories_individual, day_trajectory], ignore_index=True)
 
+                # Calculate pH-RL reward and add it to the DataFrame
+                day_trajectories_with_rewards = calculate_ph_rl_reward(day_trajectory)
+
+                trajectories_individual = pd.concat([trajectories_individual, day_trajectories_with_rewards], ignore_index=True)
+
+    # Fallback if there is an error in the simulation
     if len(simulated_day) < 3:
         # Fill in missing day parts with NaN
         for i in range(len(simulated_day), 3):
@@ -254,26 +284,4 @@ def clean_llm_output(json_string):
 
         return objects
 
-    def calculate_ph_rl_reward(df):
-        """
-        Calculate pH-RL reward based on the methodology:
-        """
-        df_copy = df.copy()
 
-        required_cols = ['numberMessageReceived', 'numberMessageRead', 'numberRating']
-        for col in required_cols:
-            if col not in df_copy.columns:
-                raise ValueError(f"Column '{col}' is missing from the DataFrame.")
-
-        df_copy['reward'] = 0.0
-
-        for row in df_copy.itertuples():
-            if row.numberMessageReceived > 0:
-                message_read_fraction = row.numberMessageRead / row.numberMessageReceived
-            else:
-                message_read_fraction = 0.0
-
-            reward = 0.5 * message_read_fraction + 0.5 * row.numberRating
-            df_copy.at[row.Index, 'reward'] = round(reward, 6)
-
-        return df_copy
