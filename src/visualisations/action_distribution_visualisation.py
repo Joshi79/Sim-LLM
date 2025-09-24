@@ -5,7 +5,7 @@ import datetime
 
 
 # needed for
-file_path = r"C:\Users\User\PycharmProjects\Sim-LLM\reports\output_policy_utility\boostrapped_results_fixed_learned_policies.json"
+file_path = r"../../reports/output_policy_utility/boostrapped_results_fixed_learned_policies.json"
 
 
 with open(file_path, 'r') as f:
