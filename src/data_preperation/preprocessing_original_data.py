@@ -67,11 +67,10 @@ def remove_incorrect_rows(df):
 
 
 
-# Def for dropping users with no ratings inputted and no messages read
+
 def drop_users_no_ratingsAndMessages(df):
     print("Start dropping users with no ratings and no messages read.")
 
-    # Group by user_id and check if all values in 'numberMessageRead' and 'numberRating' are zero
     df_noRead_noRatings = df.groupby('user_id').filter(lambda x: (x['numberMessageRead'] == 0).all() and (x['numberRating'] == 0).all())
 
     # Get the user_ids
@@ -206,8 +205,7 @@ def perform_data_cleaning(df):
 
 def train_val_test_generation(df):
 
-    # GIVES SPLIT OF 50/25/25!!!!
-    # Lists of length 20 with df's train, val and test
+
     list_train_dfs = []
     list_val_dfs = []
     list_test_df = []
@@ -220,9 +218,6 @@ def train_val_test_generation(df):
     list_train_val_dfs = []
     list_test_unscaled_dfs = []
 
-
-    # Do train/test split
-    # 80/20 split
     splitter = GroupShuffleSplit(test_size=.25, n_splits=20, random_state = 0) # was 0.2 en 0.25 voor train/val
     
     for train_val_inds, test_inds in splitter.split(df, groups=df['user_id']):

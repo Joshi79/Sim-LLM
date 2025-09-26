@@ -22,7 +22,7 @@ def _zscore_matrix(X):
     return Z
 
 
-def _euclidean(a: np.ndarray, b: np.ndarray):
+def _euclidean(a, b):
     return float(np.linalg.norm(a - b))
 
 
@@ -30,7 +30,6 @@ def dtw_distance(A, B, normalize= True):
     """
     Classic DTW distance between two sequences of shape [T, F].
     Per-timestep distance is Euclidean in feature space.
-    Normalize true, make distabces more comparable across lengths.
     """
     n, m = len(A), len(B)
     if n == 0 and m == 0:
@@ -132,14 +131,14 @@ def pairwise_within_train_dtw(train_series,max_pairs= 200,normalize= True,random
     return pd.DataFrame(rows)
 
 
-def leakage_check(train_df: pd.DataFrame, test_df: pd.DataFrame, id_col: str) -> Tuple[bool, List[str]]:
+def leakage_check(train_df, test_df, id_col):
     train_ids = set(map(str, train_df[id_col].unique()))
     test_ids = set(map(str, test_df[id_col].unique()))
     overlap = sorted(train_ids.intersection(test_ids))
     return (len(overlap) == 0), overlap
 
 
-def summarize_distances(distances: pd.Series) -> dict:
+def summarize_distances(distances):
     if distances.empty:
         return {"count": 0}
     q = distances.quantile([0.5, 0.9, 0.95, 0.99]).to_dict()
