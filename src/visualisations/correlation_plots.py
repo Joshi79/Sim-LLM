@@ -143,7 +143,7 @@ def create_temporal_correlation_heatmap(real_df,synthetic_df,all_cols,patient_co
     plt.tight_layout()
 
     # Save trend figure
-    plt.savefig('../output_data_fidelity/temporal_correlation_trends_test_basline_prompt.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+    plt.savefig('../../reports/output_data_fidelity/train_trend_comparison.pdf', format='pdf', dpi=1200, bbox_inches='tight')
     #plt.show()
 
     # Cycle correlations heatmap
@@ -166,7 +166,7 @@ def create_temporal_correlation_heatmap(real_df,synthetic_df,all_cols,patient_co
     plt.tight_layout()
 
     # Save cycle figure
-    plt.savefig('../output_data_fidelity/temporal_correlation_cycles_test_baseline_prompt.pdf', format='pdf', dpi=1200, bbox_inches='tight')
+    plt.savefig('../../reports/output_data_fidelity/train_cycle_comparison.pdf', format='pdf', dpi=1200, bbox_inches='tight')
 
     # Calculate and print correlation differences
     trend_diff = np.abs(corr_matrices["trend_real"].values - corr_matrices["trend_synthetic"].values)
@@ -190,14 +190,14 @@ def create_temporal_correlation_heatmap(real_df,synthetic_df,all_cols,patient_co
     return corr_matrices
 
 # original data paths
-original_data_splits = r"C:\Users\User\PycharmProjects\master_thesis\simulation_data\final_run_data_preparation\data_splits\original_training_dataset.csv"
-real_test_path = r"C:\Users\User\PycharmProjects\master_thesis\simulation_data\final_run_data_preparation\data_splits\test_df.csv"
+original_data_splits = "../../data/original_training_dataset.csv"
+real_test_path = "../../data/test_df.csv"
 
 
 # synthetic data paths
-synthetic_path_no_orignal_data_info = r"C:\Users\User\PycharmProjects\Sim-LLM\data\prompt_no_info_orignal_data.csv"
-synthetic_path_not_grounded_in_synthetic = r"C:\Users\User\PycharmProjects\Sim-LLM\data\prompt_not_grounded_in_synthetic.csv"
-synthetic_baseline = r"C:\Users\User\PycharmProjects\Sim-LLM\data\synthetic_data_baseline_prompt.csv"
+synthetic_path_no_orignal_data_info = "../../data/prompt_no_info_orignal_data.csv"
+synthetic_path_not_grounded_in_synthetic = "../../data/prompt_not_grounded_in_synthetic.csv"
+synthetic_baseline = "../../data/synthetic_data_baseline_prompt.csv"
 
 
 pretty = {
@@ -243,6 +243,7 @@ trends = calculate_full_correlation_matrices(
     all_cols=all_columns,
     patient_col="user_id"
 )
+'''
 
 trends_json = {
     "trend_real": trends["trend_real"].to_dict(),
@@ -254,3 +255,4 @@ trends_json = {
 with open("../../reports/output_data_fidelity/temporal_correlation_synthetic_baseline.json", "w") as f:
     json.dump(trends_json, f, indent=4)
 
+'''

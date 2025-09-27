@@ -64,7 +64,6 @@ if not baseline_df.empty:
     for key, value in baseline_summary.items():
         print(f"  {key:>6}: {value}")
 
-# SPEICHERE ERGEBNISSE
 print(f"\n save output")
 leakage_df.to_csv(os.path.join(output_dir, "dtw_leakage_check.csv"), index=False)
 nn_df.to_csv(os.path.join(output_dir, "dtw_test_to_train_nearest.csv"), index=False)
