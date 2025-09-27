@@ -155,15 +155,75 @@ def summarize_distances(distances):
     }
 
 
-def dtw_similarity_report(train_df,test_df,id_col,time_col,feature_cols,normalize= True,max_within_pairs= 200,zscore_per_patient= True):
+def nearest_dtw_within_train(train_series, normalize=True, max_pairs=None, random_state=42):
+    """
+    For each training patient, compute DTW distance to all other training patients
+    and find the nearest neighbor. This provides a baseline for comparison.
+    """
+    rng = np.random.default_rng(random_state)
+    train_ids = list(train_series.keys())
+
+    if len(train_ids) < 2:
+        return pd.DataFrame(columns=["train_id", "nearest_train_id", "dtw_min",
+                                     "len_train", "len_nearest"])
+
+    if max_pairs is not None and len(train_ids) > max_pairs:
+        sampled_ids = rng.choice(train_ids, size=max_pairs, replace=False)
+        eval_ids = sampled_ids
+    else:
+        eval_ids = train_ids
+
+    rows = []
+    for train_id in eval_ids:
+        train_seq = train_series[train_id]
+        best_dist = math.inf
+        best_neighbor_id = None
+
+        for other_id in train_ids:
+            if other_id == train_id:  # Skip self
+                continue
+            other_seq = train_series[other_id]
+            d = dtw_distance(train_seq, other_seq, normalize=normalize)
+            if d < best_dist:
+                best_dist = d
+                best_neighbor_id = other_id
+
+        rows.append({
+            "train_id": train_id,
+            "nearest_train_id": best_neighbor_id,
+            "dtw_min": best_dist,
+            "len_train": len(train_seq),
+            "len_nearest": len(train_series[best_neighbor_id]) if best_neighbor_id is not None else None,
+        })
+
+    return pd.DataFrame(rows)
+
+def mean_pairwise_between_test_and_train(train_series, test_series, normalize=True):
+    """
+    Compute the mean DTW distance for all pairs between test and train sets
+    without storing all individual distances.
+    """
+    total_distance = 0.0
+    pair_count = 0
+    for test_seq in test_series.values():
+        for train_seq in train_series.values():
+            total_distance += dtw_distance(test_seq, train_seq, normalize=normalize)
+            pair_count += 1
+
+    return total_distance / pair_count if pair_count > 0 else 0.0
+
+
+def dtw_similarity_report(train_df, test_df, id_col, time_col, feature_cols,
+                          normalize=True, max_within_pairs=200, zscore_per_patient=True,
+                          max_train_neighbors=None):
     """
     Build the series, check leakage, compute nearest-neighbor DTW from test->train,
+    and compute nearest-neighbor DTW within training set.
     """
     no_leakage, overlap = leakage_check(train_df, test_df, id_col)
     leakage_df = pd.DataFrame([{"no_leakage": no_leakage, "overlap_ids": overlap}])
 
     if not no_leakage:
-        # You can choose to raise here; we just report the overlap.
         pass
 
     train_series = build_patient_series(
@@ -175,15 +235,21 @@ def dtw_similarity_report(train_df,test_df,id_col,time_col,feature_cols,normaliz
         zscore_per_patient=zscore_per_patient
     )
 
+    # Test to train nearest neighbors
     nn_df = nearest_dtw_from_test_to_train(train_series, test_series, normalize=normalize)
 
+    # Train to train nearest neighbors
+    train_nn_df = nearest_dtw_within_train(train_series, normalize=normalize,
+                                           max_pairs=max_train_neighbors)
+
+    # Pairwise within train (for additional analysis)
     if len(train_series) >= 2:
         baseline_df = pairwise_within_train_dtw(
             train_series, max_pairs=max_within_pairs, normalize=normalize
         )
     else:
-        baseline_df = pd.DataFrame(columns=["id_a","id_b","dtw","len_a","len_b"])
+        baseline_df = pd.DataFrame(columns=["id_a", "id_b", "dtw", "len_a", "len_b"])
 
-    return leakage_df, nn_df, baseline_df
+    return leakage_df, nn_df, train_nn_df, baseline_df
 
 
