@@ -5,7 +5,7 @@ from itertools import combinations
 from pathlib import Path
 
 
-def create_trend_analysis_summary(file_path: str) -> str:
+def create_trend_analysis_summary(file_path):
     """
     Read a CSV, extract linear trends,
     """

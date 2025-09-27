@@ -44,10 +44,32 @@ To access the LLaMa-3.1-8B-Instruct you need to download the model from Hugging 
 ### File Sharing 
 To transfer files from your local Computer to Snelius Windows user can use WinSCP (https://winscp.net/eng/download.php).
 
+### Usage 
 
-#### Optuna Hyperparameter Tuning
-The script for Optuna is made to run on Snelius and not locally. 
-To run the optuna hyperparameter tuning you need to transfer the training data to your Snelius Project space 
-and change the path in the code to the project space, in which the data is stored 
+##### Optuna Hyperparameter Tuning
+To run the Optuna hyperparameter tuning for the DDQN agent, submit the ex_optuna.sh job:
+Before running the Job make sure to change the path to your data path on snelius before running the job
 
+```bash
+sbatch ex_optuna.sh
+```
 
+##### Simulation 70B
+To run the simulation with the 70B model, you need to change the path to your data path on Snelius on the prompt_parts.py file
+Subsequently, you can change the number of patients and number of days in the run_simulations_70B_modell.py
+Also you need the to request access to the LLaMa-3.3.-70B Instruct model via Servicedesk of SURF.
+To run the simulation, submit the ex_simulation_70B.sh job:
+
+```bash
+sbatch ex_llama70B.sh
+```
+
+##### Simulation 8B
+To run the simulation with the 70B model, you need to change the path to your data path on Snelius on the prompt_parts.py file
+You need to download the LLaMa-3.1-8B-Instruct model from Hugging Face and transfer it to Snelius via Filesharing.
+Subsequently, you need to change the data directory in which you saved the model in the llama_3_1_8b_instruct.py file
+To run the simulation, submit the ex_simulation_8B.sh job:
+
+```bash
+sbatch ex_llama_8B.sh
+```
