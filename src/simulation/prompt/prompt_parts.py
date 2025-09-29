@@ -1,5 +1,5 @@
 from src.simulation.utils.create_compact_statistics import  create_compact_statistics_summary
-from src.simulation.utils.kendall_correlation import  create_trend_analysis_summary
+from src.simulation.utils.trend_cycle import  create_trend_analysis_summary
 
 def create_instruction() -> str:
     """Create the improved instructions for the LLM with internal COT reasoning."""
@@ -126,8 +126,8 @@ def create_dataset_statistics():
     # Importantly the path needs to be changed depending on where you have the data stored on your snelius project space
     data_statistics = create_compact_statistics_summary("data/data_splits/original_training_dataset.csv")
 
-    kendall_analysis = create_trend_analysis_summary("data/data_splits/original_training_dataset.csv")
+    trend_analysis = create_trend_analysis_summary("data/data_splits/original_training_dataset.csv")
 
-    data_statistics += "\n\n" + kendall_analysis
+    data_statistics += "\n\n" + trend_analysis
 
     return data_statistics
