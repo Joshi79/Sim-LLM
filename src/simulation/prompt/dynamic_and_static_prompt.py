@@ -34,11 +34,6 @@ def static_prompt_template():
     - First, choose a single integer between 0 and 7 to serve as the day’s total number of ratings. Then output three rows—for morning, afternoon, and evening—where each row’s number_of_inputed_ratings is a non-decreasing cumulative total (morning = morning count, afternoon = morning + afternoon, evening = full daily total), 
     - ensuring the final value never exceeds the chosen daily maximum and should orient itself at the dataset statistics.
     - Again the range of the number_of_inputed_ratings for the entire day has to be between 0 and 7. 
-    - The Number Message Read cannot be higher than Number Messages Recieved. 
-    - The Number Message Read cannot be higher than Number Messages Recieved.
-    - The Number Message Read cannot be higher than Number Messages Recieved.
-    - The Rating 0 cannot be togther with an actual rating any number between 1 and 7.
-    - The Rating 0 cannot be togther with an actual rating any number between 1 and 7.
     <| eot_id |>
     """
     )
