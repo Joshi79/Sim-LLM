@@ -10,9 +10,9 @@ Simulators provide a solution for safely training and evaluating RL policies. Th
 A four-layer prompt instructed two LLMs, Llama-3.3-70B-Instruct and Llama-3.1-8B-Instruct, to generate 100 synthetic patient trajectories for low-mood interventions. 
 The 8B model failed to produce valid outputs, thus restricting the analysis to the 70B model, whose data were assessed for fidelity and utility in RL training While the simulator adhered to boundary constraints and captured most original categories, achieving a CAT score of 0.880, it failed to replicate the overall statistical structure. 
 The simulated patient trajectories exhibited divergent temporal correlations, and only two variables passed distributional tests against the original data.
- Despite this limited fidelity, policies trained on the complete synthetic data achieved the highest median FQE value (10.253) on the test data and outperformed the policy trained on the original data (p = $5.4944\times10^{-13}$). 
- However, this performance was not statistically superior to a fixed baseline policy (p = 0.159). 
- These results suggest that even with imperfect simulators, useful synthetic data can be developed for personalized RL policies, but substantial improvements are necessary before it can reliably enhance real patient data. 
+Despite this limited fidelity, policies trained on the complete synthetic data achieved the highest median FQE value (10.253) on the test data and outperformed the policy trained on the original data (p = $5.4944\times10^{-13}$). 
+However, this performance was not statistically superior to a fixed baseline policy (p = 0.159). 
+These results suggest that even with imperfect simulators, useful synthetic data can be developed for personalized RL policies, but substantial improvements are necessary before it can reliably enhance real patient data. 
 ```
 ## Project structure
 
