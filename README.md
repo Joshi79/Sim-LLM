@@ -4,7 +4,15 @@ Author: Joshua Joel Haas
 
 ## Abstract 
 ```text
-Hey 
+Integrating  reinforcement learning (RL) into mobile health (mHealth) applications offers a path to personalise interventions and might reduce high patient dropout rates. 
+However, direct clinical deployment poses significant ethical and safety challenges. 
+Simulators provide a solution for safely training and evaluating RL policies. Therefore, this thesis examines how effectively a pre-trained Large Language Model (LLM)-based patient simulator, seeded with aggregated statistics from an mHealth study on low-mood interventions, improves the development of personalised RL policies compared with using only the original dataset.
+A four-layer prompt instructed two LLMs, Llama-3.3-70B-Instruct and Llama-3.1-8B-Instruct, to generate 100 synthetic patient trajectories for low-mood interventions. 
+The 8B model failed to produce valid outputs, thus restricting the analysis to the 70B model, whose data were assessed for fidelity and utility in RL training While the simulator adhered to boundary constraints and captured most original categories, achieving a CAT score of 0.880, it failed to replicate the overall statistical structure. 
+The simulated patient trajectories exhibited divergent temporal correlations, and only two variables passed distributional tests against the original data.
+ Despite this limited fidelity, policies trained on the complete synthetic data achieved the highest median FQE value (10.253) on the test data and outperformed the policy trained on the original data (p = $5.4944\times10^{-13}$). 
+ However, this performance was not statistically superior to a fixed baseline policy (p = 0.159). 
+ These results suggest that even with imperfect simulators, useful synthetic data can be developed for personalized RL policies, but substantial improvements are necessary before it can reliably enhance real patient data. 
 ```
 ## Project structure
 
